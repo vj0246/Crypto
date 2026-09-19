@@ -1,0 +1,14 @@
+.env*
+node_modules/
+__pycache__/
+.next/
+dist/
+build/
+*.log
+.git/
+data/
+*.parquet
+*.duckdb
+*.pem
+*.key
+credentials*

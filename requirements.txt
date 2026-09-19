@@ -1,0 +1,15 @@
+aiohttp
+duckdb
+fastapi
+matplotlib
+numba
+numpy
+pandas
+pyarrow
+pydantic
+pydantic-settings
+pytest
+requests
+scipy
+uvicorn
+websockets
