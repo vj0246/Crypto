@@ -35,6 +35,30 @@ Non-liquidation trades from the same stream are written as `aggr` rows, as the s
 intends. Schema is not extended: confidence is not stored (tradeoff: simpler schema,
 cost: no per-row confidence for downstream filtering). Revisit if the Hawkes fit needs it.
 
-## Open items to verify before coding
-- Liquidator counterparty address(es) for signal B: verify against live data, not memory.
-- Tolerance for the liq_px comparison: tune on live sample.
+## D6: Implementation tradeoffs (decided)
+- One row per trade: a liquidation trade emits only a `long_liq`/`short_liq` row
+  (trader = liquidated address, side = side of the forced order), never also an `aggr`
+  row. Other trades emit one `aggr` row (trader = taker). Keeps counts honest for Hawkes.
+- Only seeded addresses are tracked. Starting a position at zero from the stream would be
+  wrong, so recall is bounded by the polled universe.
+- Add/flip trades clear the stored liq_px (cannot recompute without collateral) and put the
+  address in `needs_reseed` so the poller can prioritize it. Cost: misses between re-seeds.
+- Trades are deduplicated by (coin, tid) with a bounded 200k window, because websocket
+  reconnects replay trades and a double-applied fill corrupts positions.
+- Detector is not wired into a recorder yet. It works as the `stream_trades` callback and
+  takes an optional sink (e.g. `ParquetWriter.append`). Wiring and the fuel poller are separate work.
+- Defaults `liq_price_tolerance=0.001`, `liq_cross_check_min_dev=0.0005` are untuned guesses.
+
+## Verification status
+- Verified: 15 unit tests pass (synthetic liquidations both sides, tolerance edges,
+  reseed, dedupe, malformed users, Parquet schema roundtrip, margin-table liq px
+  reproducing the 77024.426 figure). A deliberate bug injection made 8 tests fail.
+- NOT verified: live API is blocked in this sandbox (proxy 403), so these are unconfirmed:
+  trade payload shape (`users = [buyer, seller]`, `side` = taker side), `liquidationPx`
+  field name in `clearinghouseState`, and the liquidator counterparty addresses.
+  `liquidator_addresses` therefore defaults to empty and signal B uses price deviation only.
+- Accuracy of the inference is unmeasured: no labelled data.
+
+## Open items
+- Run against live data from an unrestricted network and confirm the three unverified items.
+- Tune tolerance on a live sample.

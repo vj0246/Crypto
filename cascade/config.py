@@ -48,6 +48,15 @@ class Settings(BaseSettings):
     fuel_poll_interval_s: float = 60.0
     fuel_bands: tuple[float, ...] = (0.005, 0.01, 0.02, 0.05, 0.10)
 
+    # --- liquidation inference ------------------------------------------
+    # Fractional slack when comparing a fill price to a position's liquidation
+    # price (fills happen on the book, triggers on mark). Not tuned on live data.
+    liq_price_tolerance: float = 0.001
+    # Cross-check B: fill-vs-mark deviation counted as "looks like a forced fill".
+    liq_cross_check_min_dev: float = 0.0005
+    # Known liquidator counterparty addresses. Empty until verified against live data.
+    liquidator_addresses: tuple[str, ...] = ()
+
     # --- hawkes --------------------------------------------------------
     # Sum-of-exponentials decay rates (1/second). Log-spaced over ~1s..~1h
     # so the mixture can mimic a power-law kernel.
